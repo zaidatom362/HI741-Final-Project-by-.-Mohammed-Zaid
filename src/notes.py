@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 """
 Notes Manager - Handles patient diaries (clinical notes) 
 """
