@@ -1,122 +1,219 @@
 #!/usr/bin/env python3
+
 # -*- coding: utf-8 -*-
+
 """
-Utility Functions Module for Clinical Data Warehouse
-HI 741 Final Project
+
+Utility Functions for the Clinical Data Warehouse
+
+
+These helpers keep our code DRY and our data safe. 
+
+Handles CSV reading/writing, logging, and other common chores.
+
 """
+
 
 import csv
+
 import os
+
 from datetime import datetime
 
+
 def load_csv_data(filename):
-    """
-    Load data from CSV file with proper error handling.
-    
-    Args:
-        filename: Path to the CSV file
-        
-    Returns:
-        List of dictionaries representing CSV rows or empty list if file not found
-    """
-    try:
-        with open(filename, 'r', newline='') as f:
-            # Create list of dictionaries from CSV file
-            return list(csv.DictReader(f))
-    except FileNotFoundError:
-        print(f"Warning: File {filename} not found. Returning empty list.")
-        return []
-    except PermissionError:
-        print(f"Error: Permission denied when accessing {filename}.")
-        return []
-    except Exception as e:
-        print(f"Error loading {filename}: {str(e)}")
-        return []
+
+   """
+
+   Read CSV data into a list of dictionaries.
+
+   Returns an empty list if the file is missing or unreadable.
+
+
+   Args:
+
+       filename: Path to the CSV file.
+
+
+   Returns:
+
+       List of dicts, one per row. Empty list if file not found or unreadable.
+
+   """
+
+   try:
+
+       with open(filename, 'r', newline='') as f:
+
+           # Each row becomes a dictionary keyed by column name.
+
+           return list(csv.DictReader(f))
+
+   except FileNotFoundError:
+
+       print(f"Warning: File {filename} not found. Returning empty list.")
+
+       return []
+
+   except PermissionError:
+
+       print(f"Error: Can't open {filename} (permission denied).")
+
+       return []
+
+   except Exception as e:
+
+       print(f"Error loading {filename}: {str(e)}")
+
+       return []
+
 
 def save_csv_data(filename, data, fieldnames=None):
-    """
-    Save data to CSV file using atomic write pattern for data integrity.
-    
-    Args:
-        filename: Path to the CSV file
-        data: List of dictionaries to save
-        fieldnames: Optional list of field names for CSV header
-    """
-    if not data:
-        return  # Don't write empty data
-        
-    # Get field names from first record if not provided
-    if not fieldnames and data:
-        fieldnames = data[0].keys()
-        
-    # Create directory if it doesn't exist
-    os.makedirs(os.path.dirname(filename) or '.', exist_ok=True)
-        
-    # Write to temporary file first (atomic write pattern)
-    temp_file = f"{filename}.tmp"
-    try:
-        with open(temp_file, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(data)
-            
-        # Atomically replace the original file
-        os.replace(temp_file, filename)
-    except Exception as e:
-        # Clean up temp file if something went wrong
-        if os.path.exists(temp_file):
-            os.remove(temp_file)
-        raise e
+
+   """
+
+   Write a list of dictionaries to a CSV file, safely.
+
+   Uses a temp file and atomic move to avoid data loss if something goes wrong.
+
+
+   Args:
+
+       filename: Where to save the CSV.
+
+       data: List of dicts (rows).
+
+       fieldnames: Optional list of column names. If not given, uses keys from the first row.
+
+   """
+
+   if not data:
+
+       return # Nothing to write
+
+
+   # Figure out the columns if not provided
+
+   if not fieldnames and data:
+
+       fieldnames = data[0].keys()
+
+
+   # Make sure the folder exists
+
+   os.makedirs(os.path.dirname(filename) or '.', exist_ok=True)
+
+
+   temp_file = f"{filename}.tmp"
+
+   try:
+
+       with open(temp_file, 'w', newline='') as f:
+
+           writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+           writer.writeheader()
+
+           writer.writerows(data)
+
+       # Move the temp file into place (atomic replace)
+
+       os.replace(temp_file, filename)
+
+   except Exception as e:
+
+       # If anything goes wrong, clean up the temp file
+
+       if os.path.exists(temp_file):
+
+           os.remove(temp_file)
+
+       raise e
+
 
 def log_activity(username, role, action):
-    """
-    Log user activity to usage_stats.csv for audit purposes.
-    
-    Args:
-        username: Username of the user performing the action
-        role: Role of the user (admin, management, nurse, clinician)
-        action: Description of the action performed
-    """
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
-    # Ensure data directory exists
-    os.makedirs('data', exist_ok=True)
-    
-    log_file = 'data/usage_stats.csv'
-    file_exists = os.path.exists(log_file)
-    
-    # Append to log file
-    with open(log_file, 'a', newline='') as f:
-        # Write header if file is new or empty
-        if not file_exists or os.path.getsize(log_file) == 0:
-            writer = csv.writer(f)
-            writer.writerow(['Timestamp', 'Username', 'Role', 'Action'])
-        
-        writer = csv.writer(f)
-        writer.writerow([timestamp, username, role, action])
+
+   """
+
+   Record what users are doing for audit trails and accountability.
+
+
+   Args:
+
+       username: Who did it.
+
+       role: What hat they were wearing (admin, nurse, etc).
+
+       action: What they did (e.g., 'Logged in', 'Viewed notes').
+
+   """
+
+   timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+   os.makedirs('data', exist_ok=True)
+
+   log_file = 'data/usage_stats.csv'
+
+   file_exists = os.path.exists(log_file)
+
+
+   with open(log_file, 'a', newline='') as f:
+
+       writer = csv.writer(f)
+
+       # If this is a new file, write the header first
+
+       if not file_exists or os.path.getsize(log_file) == 0:
+
+           writer.writerow(['Timestamp', 'Username', 'Role', 'Action'])
+
+       writer.writerow([timestamp, username, role, action])
+
 
 def validate_date(date_str):
-    """
-    Validate date string format (YYYY-MM-DD).
-    
-    Args:
-        date_str: Date string to validate
-        
-    Returns:
-        True if valid, False otherwise
-    """
-    try:
-        datetime.strptime(date_str, '%Y-%m-%d')
-        return True
-    except ValueError:
-        return False
+
+   """
+
+   Check if a string looks like a date in YYYY-MM-DD format.
+
+
+   Args:
+
+       date_str: The date as a string.
+
+
+   Returns:
+
+       True if it's a valid date, False otherwise.
+
+   """
+
+   try:
+
+       datetime.strptime(date_str, '%Y-%m-%d')
+
+       return True
+
+   except ValueError:
+
+       return False
+
 
 def generate_unique_id():
-    """
-    Generate a unique ID for visits or other records.
-    
-    Returns:
-        String containing a unique identifier
-    """
-    import uuid
-    return str(uuid.uuid4())
+
+   """
+
+   Make a unique ID for a new visit, patient, or whatever needs it.
+
+
+   Returns:
+
+       A string that's (almost) guaranteed to be unique.
+
+   """
+
+   import uuid
+
+   return str(uuid.uuid4())
+
+
