@@ -57,20 +57,23 @@ From the project root, type:
 python main.py
 
 HI741-Final-Project/
-├── data/ # Input CSVs
-| ├── Credentials.cvs
-| ├── Notes.csv
-| ├── Patient_data.csv
-├── output/ # Generated charts and logs
-├── src/ # Package code
-│ ├── init.py
-│ ├── auth.py
-│ ├── patients.py
-│ ├── notes.py
-│ ├── stats.py
-│ ├── ui.py
-│ └── utils.py
-├── main.py # Launcher
+HI741-Final-Project/
+├── data/
+│   ├── Credentials.csv
+│   ├── Notes.csv
+│   └── Patient_data.csv
+├── output/
+│   ├── visit_trends.png
+│   └── audit_log.csv
+├── src/
+│   ├── __init__.py
+│   ├── auth.py
+│   ├── patients.py
+│   ├── notes.py
+│   ├── stats.py
+│   ├── ui.py
+│   └── utils.py
+├── main.py
 ├── requirements.txt
 └── README.md
 
